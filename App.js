@@ -1,45 +1,79 @@
-// App.js (앱의 시작점)
+// App.js
 
 import * as React from 'react';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AuthProvider, AuthContext } from './src/context/AuthContext'; // 🔑 AuthContext 불러오기
 
-// 🔑 중요: 각 페이지 파일을 정확한 경로로 불러옵니다.
-// './src/pages/Auth/' 경로는 당신의 파일 구조에 맞춰졌습니다.
-import { LoginScreen } from './src/pages/Auth/login'; 
-import SignupScreen from './src/pages/Auth/signup'; // 회원가입 화면 (이 파일도 만들어야 합니다)
-import MainScreen from './src/pages/main'; // 메인 홈 화면 (이 파일도 만들어야 합니다)
+// 🔑 각 화면 컴포넌트 import
+import LoginScreen from './src/pages/Auth/login'; 
+import SignupScreen from './src/pages/Auth/signup';
+import MainScreen from './src/pages/main';
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+// ------------------------------------
+// 임시 스플래시(로딩) 화면
+// ------------------------------------
+function SplashScreen() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator 
-        // 앱을 시작했을 때 가장 먼저 보여줄 화면을 'Login'으로 설정
-        initialRouteName="Login"
-      >
-        {/* 1. 'Login' 화면 등록 (실제 폼이 있는 화면) */}
-        <Stack.Screen 
-          name="Login" 
-          component={LoginScreen} 
-          options={{ title: '로그인', headerShown: false }} // 헤더바 숨김
-        />
-        
-        {/* 2. 'Signup' 화면 등록 */}
-        <Stack.Screen 
-          name="Signup" 
-          component={SignupScreen} 
-          options={{ title: '회원가입' }} 
-        />
-        
-        {/* 3. 'Home' 화면 등록 */}
-        <Stack.Screen 
-          name="Home" 
-          component={MainScreen} 
-          options={{ title: '수면 분석 시작' }} 
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={styles.container}>
+      <ActivityIndicator size="large" color="#0000ff" />
+      <Text style={{ marginTop: 10 }}>인증 정보 확인 중...</Text>
+    </View>
   );
 }
+
+// ------------------------------------
+// 인증 관련 화면 스택 (로그인, 회원가입)
+// ------------------------------------
+const AuthStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Signup" component={SignupScreen} />
+    </Stack.Navigator>
+);
+
+// ------------------------------------
+// 앱 주요 기능 화면 스택 (메인, 녹음)
+// ------------------------------------
+const AppStack = () => (
+    <Stack.Navigator>
+        <Stack.Screen name="Home" component={MainScreen} options={{ title: '수면 분석 시작' }} />
+    </Stack.Navigator>
+);
+
+// ------------------------------------
+// 네비게이션 루트
+// ------------------------------------
+function RootNavigator() {
+    const { userToken, isLoading } = React.useContext(AuthContext);
+
+    if (isLoading) {
+      return <SplashScreen />;
+    }
+  
+    return (
+      <NavigationContainer>
+          {userToken == null ? <AuthStack /> : <AppStack />}
+      </NavigationContainer>
+    );
+}
+
+export default function App() {
+    return (
+        // 앱 전체를 AuthProvider로 감싸서 모든 컴포넌트가 인증 상태에 접근하도록 함
+        <AuthProvider>
+            <RootNavigator />
+        </AuthProvider>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center'
+    }
+});
