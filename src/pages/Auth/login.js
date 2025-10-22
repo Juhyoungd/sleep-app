@@ -1,125 +1,152 @@
-// src/pages/Auth/login.js
+// src/pages/Auth/login.js (최종 완성본)
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator } from 'react-native';
-import { AuthContext } from '../../context/AuthContext'; // 🔑 AuthContext 불러오기
+import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator, ImageBackground, Alert } from 'react-native';
+import { AuthContext } from '../../context/AuthContext'; 
+
+// 🔑 이미지 경로 수정: 'src/pages/Auth/'에서 '../../assets/background.png'로 경로 수정
+const BACKGROUND_IMAGE = require('../../../assets/background.png'); 
+
 
 export default function LoginScreen({ navigation }) {
-    const { signIn } = React.useContext(AuthContext);
+    // 1. AuthContext에서 signIn 함수를 가져옵니다.
+    const { signIn } = React.useContext(AuthContext); 
+    
+    // 2. 상태 정의
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false); 
 
+    // 🔑 3. handleLogin 함수는 컴포넌트 함수 내부에 정의되어야 합니다!
     const handleLogin = async () => {
         if (!email || !password) {
-            alert('이메일과 비밀번호를 모두 입력해주세요.');
+            Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
             return;
         }
 
         setIsLoading(true); 
         
-        // 🔑 실제 API 주소를 사용하지 않고, 모킹 로직을 사용합니다.
-        // const LOGIN_URL = 'http://192.168.0.5:8080/api/login'; 
-
         try {
-            // ----------------------------------------------------
-            // 🔑 모킹(Mocking) 시작: 실제 fetch 대신 가짜 응답을 만듭니다.
-            // ----------------------------------------------------
-            
-            // 1. 서버 통신 시간을 흉내내기 위해 1.5초 지연시킵니다.
+            // 🔑 모킹(Mocking) 로직: 네트워크 오류 방지
             await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            // 2. 입력된 이메일/비밀번호에 따라 성공/실패를 가정합니다.
             const MOCK_SUCCESS_EMAIL = 'test@test.com';
 
             if (email === MOCK_SUCCESS_EMAIL && password === '1234') {
-                // 로그인 성공 가정
-                const MOCK_TOKEN = 'mock_jwt_token_for_user_' + Date.now();
-                
-                // 3. AuthContext의 signIn 함수를 호출하여 가짜 토큰을 저장하고 상태 업데이트
+                const MOCK_TOKEN = 'mock_jwt_token_' + Date.now();
                 await signIn(MOCK_TOKEN); 
-                console.log('로그인 모킹 성공. 가짜 토큰:', MOCK_TOKEN); 
-
             } else {
-                // 로그인 실패 가정
-                alert('로그인 모킹 실패: ID/PW를 확인해주세요 (모킹 테스트 중).');
+                Alert.alert('로그인 모킹 실패', 'ID/PW를 확인해주세요.');
             }
             
-            // ----------------------------------------------------
-            // 🔑 모킹(Mocking) 종료
-            // ----------------------------------------------------
-            
         } catch (error) {
-            // 모킹 중에는 네트워크 오류가 나지 않지만, 구조 유지를 위해 남겨둡니다.
             console.error('모킹 중 오류:', error);
-            alert('테스트 모킹 중 예외 오류가 발생했습니다.');
+            Alert.alert('테스트 오류', '로그인 처리 중 예외가 발생했습니다.');
         } finally {
             setIsLoading(false);
         }
     };
+    // 🔑 handleLogin 함수 정의 끝
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>로그인</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="이메일 주소"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
+    return (
+        <ImageBackground 
+            source={BACKGROUND_IMAGE} 
+            style={styles.background} 
+            resizeMode="cover" 
+        >
+            <View style={styles.overlay} />
 
-      <TextInput
-        style={styles.input}
-        placeholder="비밀번호"
-        secureTextEntry={true}
-        value={password}
-        onChangeText={setPassword}
-      />
+            <View style={styles.contentContainer}> 
+                
+                <Text style={styles.title}>Sleep Analyzer</Text>
+                <Text style={styles.subtitle}></Text>
+                
+                <TextInput
+                    style={styles.input}
+                    placeholder="이메일 주소"
+                    placeholderTextColor="#ccc" 
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={setEmail}
+                />
 
-      {isLoading ? (
-        <ActivityIndicator size="small" color="#007AFF" style={styles.loading} />
-      ) : (
-        <Button 
-          title="로그인" 
-          onPress={handleLogin} 
-          color="#007AFF" 
-        />
-      )}
+                <TextInput
+                    style={styles.input}
+                    placeholder="비밀번호"
+                    placeholderTextColor="#ccc" 
+                    secureTextEntry={true}
+                    value={password}
+                    onChangeText={setPassword}
+                />
 
-      <Button
-        title="회원가입"
-        onPress={() => navigation.navigate('Signup')}
-        color="gray"
-      />
-    </View>
-  );
+                {isLoading ? (
+                    <ActivityIndicator size="small" color="#fff" style={styles.loading} />
+                ) : (
+                    // 🔑 여기서 handleLogin 함수가 사용됩니다.
+                    <Button 
+                        title="로그인" 
+                        onPress={handleLogin} 
+                        color="#4A90E2" 
+                    />
+                )}
+
+                <View style={styles.separator} />
+
+                <Button
+                    title="회원가입"
+                    onPress={() => navigation.navigate('Signup')}
+                    color="#ffffffff" 
+                />
+            </View>
+        </ImageBackground>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingHorizontal: 15,
-    fontSize: 16,
-  },
-  loading: {
-      marginVertical: 10,
-  }
+    background: {
+        flex: 1, 
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    contentContainer: {
+        flex: 1,
+        padding: 30,
+        justifyContent: 'center',
+        backgroundColor: 'transparent', 
+        zIndex: 1,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        marginBottom: 5,
+        textAlign: 'center',
+        color: '#fff', 
+    },
+    subtitle: {
+        fontSize: 16,
+        marginBottom: 40,
+        textAlign: 'center',
+        color: '#ddd',
+    },
+    input: {
+        height: 50,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        color: '#fff',
+        borderRadius: 8,
+        marginBottom: 15,
+        paddingHorizontal: 15,
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: '#555',
+    },
+    loading: {
+        marginVertical: 10,
+    },
+    separator: {
+        height: 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        marginVertical: 15,
+    }
 });

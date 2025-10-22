@@ -1,11 +1,15 @@
-// src/pages/main.js (녹음, 업로드, UI 통합 버전)
+// src/pages/main.js (배경 이미지 및 녹음 기능)
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Button, StyleSheet, Alert, TouchableOpacity, ActivityIndicator, ImageBackground, Image } from 'react-native'; // 🔑 ImageBackground, Image 추가
 import { AuthContext } from '../context/AuthContext';
 import { Audio } from 'expo-av'; 
 
-// 🔑 녹음 설정 (수면 분석을 위한 일반적인 설정)
+// 🔑 이미지 URI 경로를 require와 resolveAssetSource를 통해 미리 준비합니다.
+// 경로가 Auth 폴더의 login/signup과 다름을 주의하세요: '../pages/'에서 '../../assets'가 아닌, '../'에서 '../../assets'
+const BACKGROUND_IMAGE_URI = Image.resolveAssetSource(require('../../assets/background.png')); 
+
+// 🔑 녹음 설정 (이전과 동일)
 const recordingOptions = {
     isMeteringEnabled: true,
     android: {
@@ -28,44 +32,13 @@ const recordingOptions = {
     },
 };
 
-// 🔑 녹음 파일 전송(업로드) 함수: 파일을 FormData로 만들어 백엔드에 전송합니다.
+// 🔑 녹음 파일 전송(업로드) 함수: 네트워크 오류 없이 항상 성공하는 모킹 버전
 const uploadRecording = async (uri, token) => {
-    // 🔑 실제 컴퓨터 IP와 백엔드 포트로 변경해야 합니다.
-    const UPLOAD_URL = 'http://your-backend-ip-or-domain:port/api/upload-audio'; 
+    console.log(`[네트워크 오류 방지 모킹] 파일 URI: ${uri}, 토큰: ${token}`);
     
-    const data = new FormData();
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
     
-    // 1. 녹음 파일 정보를 FormData에 추가 (백엔드와 필드 이름 'audio' 협의 필요)
-    data.append('audio', {
-        uri: uri, 
-        type: 'audio/m4a', 
-        name: 'sleep_recording_' + Date.now() + '.m4a', 
-    });
-
-    try {
-        const response = await fetch(UPLOAD_URL, {
-            method: 'POST',
-            headers: {
-                // 2. 인증 토큰을 헤더에 첨부
-                'Authorization': `Bearer ${token}`, 
-            },
-            body: data, // FormData 객체 전송
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            // 백엔드가 분석 결과를 반환한다고 가정
-            return { success: true, analysisId: result.analysis_id };
-        } else {
-            const errorText = await response.text();
-            console.error('업로드 실패 응답:', errorText);
-            return { success: false, message: '파일 전송 실패' };
-        }
-
-    } catch (error) {
-        console.error('네트워크 오류로 파일 전송 실패:', error);
-        return { success: false, message: '네트워크 연결 오류' };
-    }
+    return { success: true, analysisId: 'MOCK_AI_RESULT_789' };
 };
 
 
@@ -75,10 +48,10 @@ export default function MainScreen({ navigation }) {
     const [recording, setRecording] = useState(null); 
     const [isRecording, setIsRecording] = useState(false); 
     const [recordingPermission, setRecordingPermission] = useState(null); 
-    const [isUploading, setIsUploading] = useState(false); // 업로드 상태
+    const [isUploading, setIsUploading] = useState(false); 
 
     // ------------------------------------
-    // 1. 마이크 권한 요청 로직
+    // 1. 마이크 권한 요청 로직 (이전에 구현했던 내용)
     // ------------------------------------
     useEffect(() => {
         (async () => {
@@ -96,9 +69,9 @@ export default function MainScreen({ navigation }) {
     // ------------------------------------
     const handleMainButtonPress = async () => {
         if (isRecording) {
-            await stopAndAnalyzeRecording(); // 녹음 중이면 -> 중지 및 분석 요청
+            await stopAndAnalyzeRecording(); 
         } else {
-            await startRecording(); // 녹음 중이 아니면 -> 녹음 시작
+            await startRecording(); 
         }
     };
 
@@ -149,23 +122,33 @@ export default function MainScreen({ navigation }) {
             
             Alert.alert('녹음 완료', '녹음이 종료되었습니다. AI 분석을 시작합니다.');
 
-            setIsUploading(true); // 업로드 상태 시작
+            setIsUploading(true); 
 
-            // 백엔드 파일 업로드 및 분석 요청 (토큰 사용)
             const analysisResult = await uploadRecording(uri, userToken);
-
+            
             if (analysisResult.success) {
-                Alert.alert('분석 요청 성공', `AI 분석이 요청되었습니다. 결과 ID: ${analysisResult.analysisId}`);
-                // TODO: 분석 결과 화면으로 이동하거나, 분석 상태를 추적하는 로직 추가
+                const mockAnalysisData = {
+                    sleepDuration: "7.5 시간",
+                    snoreCount: 45,
+                    pattern: "깊은 수면 부족",
+                };
+
+                // 🔑 ResultTab으로 이동하며 데이터 전달
+                navigation.navigate('ResultTab', { 
+                    analysisId: analysisResult.analysisId,
+                    resultData: mockAnalysisData,
+                    transferTime: new Date().toLocaleTimeString(),
+                });
+                
             } else {
-                 Alert.alert('분석 요청 실패', analysisResult.message || '파일 전송에 실패했습니다. (네트워크/서버)');
+                 Alert.alert('분석 요청 실패', '모킹 실패: 전송 로직 자체에 문제가 있습니다.');
             }
 
         } catch (error) {
             console.error('녹음 중지/분석 실패', error);
             Alert.alert('오류', '녹음 중지 및 분석 요청에 실패했습니다.');
         } finally {
-            setIsUploading(false); // 업로드 상태 종료
+            setIsUploading(false);
         }
     };
 
@@ -180,66 +163,89 @@ export default function MainScreen({ navigation }) {
         : '녹음 시작';
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>수면 분석 시작</Text>
-            <Text style={styles.subtitle}>
-                {isRecording ? '🔴 지금 녹음이 진행되고 있습니다.' : isUploading ? '🌐 녹음 파일을 서버로 전송 중...' : '버튼을 눌러 수면 녹음을 시작하세요.'}
-            </Text>
-            
-            {/* 원 모양의 큰 버튼 */}
-            <TouchableOpacity
-                style={[
-                    styles.mainButton, 
-                    isRecording && styles.mainButtonRecording, // 녹음 중일 때 색상 변경
-                    isUploading && styles.mainButtonUploading, // 업로드 중일 때 색상 변경
-                ]}
-                onPress={handleMainButtonPress}
-                disabled={isUploading} // 업로드 중에는 중복 클릭 방지
-            >
-                {isUploading ? (
-                    <ActivityIndicator size="large" color="#fff" />
-                ) : (
-                    <Text style={styles.buttonText}>{buttonText}</Text>
-                )}
-            </TouchableOpacity>
+        // 🔑 1. ImageBackground 컴포넌트 사용 시작
+        <ImageBackground 
+            source={BACKGROUND_IMAGE_URI} 
+            style={styles.background} 
+            resizeMode="cover" 
+        >
+            {/* 🔑 2. 투명도 50%를 위한 오버레이 레이어 */}
+            <View style={styles.overlay} />
 
-            <View style={{ marginTop: 40 }}>
-                <Button
-                    title="로그아웃"
-                    onPress={signOut}
-                    color="#dc3545"
-                />
+            {/* 🔑 3. 실제 UI 컴포넌트 컨테이너 */}
+            <View style={styles.contentContainer}>
+                <Text style={styles.title}>수면 분석 시작</Text>
+                <Text style={styles.subtitle}>
+                    {isRecording ? '🔴 지금 녹음이 진행되고 있습니다.' : isUploading ? '🌐 녹음 파일을 서버로 전송 중...' : '버튼을 눌러 수면 녹음을 시작하세요.'}
+                </Text>
+                
+                {/* 원 모양의 큰 버튼 */}
+                <TouchableOpacity
+                    style={[
+                        styles.mainButton, 
+                        isRecording && styles.mainButtonRecording, 
+                        isUploading && styles.mainButtonUploading, 
+                    ]}
+                    onPress={handleMainButtonPress}
+                    disabled={isUploading} 
+                >
+                    {isUploading ? (
+                        <ActivityIndicator size="large" color="#fff" />
+                    ) : (
+                        <Text style={styles.buttonText}>{buttonText}</Text>
+                    )}
+                </TouchableOpacity>
+
+                <View style={{ marginTop: 40 }}>
+                    <Button
+                        title="로그아웃"
+                        onPress={signOut}
+                        color="#dc3545"
+                    />
+                </View>
             </View>
-        </View>
+        </ImageBackground>
     );
 }
 
 // ------------------------------------
-// 스타일
+// 6. 스타일 (배경 및 UI 스타일)
 // ------------------------------------
 const styles = StyleSheet.create({
-    container: {
+    // 🔑 배경 관련 스타일
+    background: {
+        flex: 1, 
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // 50% 투명도 오버레이
+    },
+    contentContainer: {
         flex: 1,
+        padding: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
+        backgroundColor: 'transparent', // 배경 투명하게
     },
+
+    // UI 스타일 (글자색은 배경에 맞게 흰색 계열로 조정)
     title: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: 'bold',
         marginBottom: 10,
+        color: '#fff', 
     },
     subtitle: {
         fontSize: 18,
         marginBottom: 50,
-        color: '#6c757d',
+        color: '#ddd', 
         textAlign: 'center'
     },
     mainButton: {
         width: 200,
         height: 200,
         borderRadius: 100,
-        backgroundColor: '#28a745', 
+        backgroundColor: '#6A5ACD', // 🔑 녹색 -> 차분한 보라색 계열로 변경
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 80,
@@ -250,10 +256,10 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
     },
     mainButtonRecording: {
-        backgroundColor: '#dc3545', 
+        backgroundColor: '#dc3545', // 녹음 중 색상 (빨간색) 유지
     },
     mainButtonUploading: {
-        backgroundColor: '#007AFF', 
+        backgroundColor: '#4A90E2', // 분석 중 색상 (파란색) 유지
     },
     buttonText: {
         color: '#fff',
