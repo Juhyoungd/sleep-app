@@ -20,7 +20,7 @@ export default function SignupScreen({ navigation }) {
     const handleSignup = async () => {
         // 1. 입력 유효성 검사
         if (!email || !password || !confirmPassword) {
-            Alert.alert('입력 오류', '모든 필드를 채워주세요.');
+            Alert.alert('입력 오류', '모두 적어주세요.');
             return;
         }
         if (password !== confirmPassword) {

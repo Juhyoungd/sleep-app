@@ -1,7 +1,8 @@
-// src/pages/ResultScreen.js (달력 및 리스트 통합 버전)
+// src/pages/ResultScreen.js (달력 및 리스트 통합 버전 - 전체 스크롤)
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+// 🔑 ScrollView 추가
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView } from 'react-native'; 
 import { useRoute } from '@react-navigation/native';
 // 🔑 설치한 달력 라이브러리에서 CalendarList를 불러옵니다.
 import { Calendar, LocaleConfig } from 'react-native-calendars'; 
@@ -24,6 +25,12 @@ const MOCK_DAILY_RESULTS = {
     '2025-10-22': [
         { id: 'a1', time: '오전 08:00', duration: '7.5 시간', quality: '매우 좋음' },
         { id: 'a2', time: '오전 08:05', duration: '10분', quality: '오류' },
+        { id: 'a3', time: '오전 08:00', duration: '7.5 시간', quality: '매우 좋음' },
+        { id: 'a4', time: '오전 08:05', duration: '10분', quality: '오류' },
+        { id: 'a5', time: '오전 08:00', duration: '7.5 시간', quality: '매우 좋음' },
+        { id: 'a6', time: '오전 08:05', duration: '10분', quality: '오류' },
+        { id: 'a7', time: '오전 08:00', duration: '7.5 시간', quality: '매우 좋음' },
+        { id: 'a8', time: '오전 08:05', duration: '10분', quality: '오류' },
     ],
     '2025-10-21': [
         { id: 'b1', time: '오전 07:30', duration: '6.8 시간', quality: '보통' },
@@ -59,7 +66,7 @@ export default function ResultScreen() {
     );
     
     // ------------------------------------
-    // 렌더링: 요약 영역 (화면 상단 1/3)
+    // 렌더링: 요약 영역
     // ------------------------------------
     const renderSummary = () => (
         <View style={styles.summaryContainer}>
@@ -77,7 +84,7 @@ export default function ResultScreen() {
     );
 
     // ------------------------------------
-    // 렌더링: 달력 및 리스트 영역 (화면 하단 2/3)
+    // 렌더링: 달력 및 리스트 영역
     // ------------------------------------
     const renderCalendarAndList = () => (
         <View style={styles.calendarContainer}>
@@ -109,18 +116,22 @@ export default function ResultScreen() {
             <FlatList
                 data={selectedDayResults}
                 renderItem={renderResultItem}
-                keyExtractor={item => item.id}
+                // 🔑 keyExtractor를 index와 item.id를 모두 사용하여 고유성을 높입니다.
+                // item.id가 확실히 고유하다면 item.id만 사용해도 되지만, 오류를 해결하기 위해 조합합니다.
+                keyExtractor={(item, index) => `${selectedDate}-${item.id}-${index}`} 
                 style={styles.list}
+                scrollEnabled={false} 
                 ListEmptyComponent={() => <Text style={styles.listEmpty}>이 날짜에는 분석 기록이 없습니다.</Text>}
             />
         </View>
     );
     
     return (
-        <View style={styles.fullScreenContainer}>
+        // 🔑 최상위 컴포넌트를 ScrollView로 변경
+        <ScrollView style={styles.fullScreenScroll}>
             {renderSummary()}
             {renderCalendarAndList()}
-        </View>
+        </ScrollView>
     );
 }
 
@@ -128,52 +139,55 @@ export default function ResultScreen() {
 // 스타일
 // ------------------------------------
 const styles = StyleSheet.create({
-    fullScreenContainer: {
+    fullScreenScroll: {
         flex: 1,
-        backgroundColor: '#f5f5f5', 
+        backgroundColor: '#303030ff',
     },
-    // 상단 1/3 영역 스타일
+    // 🔑 분석 요약 부분 스타일 수정
     summaryContainer: {
-        flex: 1, // 1/3 비율
-        padding: 20,
+        padding: 15, // 🔑 패딩을 줄여 전체적인 크기 감소
+        marginHorizontal: 20, // 🔑 좌우 마진을 추가하여 중앙 정렬 및 너비 감소
+        marginTop: 50, // 🔑 상단 마진 추가 (옵션)
+        marginBottom: 10, // 🔑 하단 마진 추가 (옵션)
         backgroundColor: '#fff',
-        borderBottomLeftRadius: 15,
-        borderBottomRightRadius: 15,
+        borderRadius: 20, // 🔑 모서리 둥글게 (기존 15에서 20으로 증가)
         alignItems: 'center',
         justifyContent: 'center',
         elevation: 5,
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 5,
+        shadowOffset: { width: 0, height: 2 }, // 🔑 그림자 방향 조정
     },
     title: {
-        fontSize: 24,
+        fontSize: 20, // 🔑 폰트 크기 약간 감소 (옵션)
         fontWeight: 'bold',
-        marginBottom: 10,
+        marginBottom: 8, // 🔑 마진 조정
         color: '#007AFF',
     },
     subtitle: {
         color: 'gray',
+        fontSize: 14, // 🔑 폰트 크기 약간 감소 (옵션)
     },
     resultBox: {
         width: '100%',
         alignItems: 'center',
     },
     summaryText: {
-        fontSize: 18,
+        fontSize: 16, // 🔑 폰트 크기 약간 감소 (옵션)
         fontWeight: '500',
-        marginVertical: 4,
+        marginVertical: 3, // 🔑 마진 조정
         color: '#333',
     },
     summaryPattern: {
-        fontSize: 18,
+        fontSize: 16, // 🔑 폰트 크기 약간 감소 (옵션)
         fontWeight: 'bold',
-        marginTop: 10,
+        marginTop: 8, // 🔑 마진 조정
         color: '#dc3545',
     },
     // 하단 2/3 영역 스타일
     calendarContainer: {
-        flex: 2, // 2/3 비율
+        // flex: 2, // 🔑 제거: 콘텐츠 높이만큼만 차지하도록 변경
         padding: 10,
     },
     calendar: {
@@ -188,11 +202,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         marginTop: 10,
         marginBottom: 10,
-        color: '#333',
-    },
-    list: {
-        flex: 1,
-        paddingHorizontal: 10,
+        color: '#ffffffff',
     },
     listItem: {
         flexDirection: 'row',
