@@ -113,7 +113,7 @@ export default function SignupScreen({ navigation }) {
                 ) : (
                     <Button 
                         title="회원가입 완료" 
-                        onPress={handleSignup} 
+                        onPress={() => void handleSignup()} 
                         color="#4A90E2" 
                     />
                 )}

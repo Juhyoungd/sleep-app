@@ -82,10 +82,10 @@ export default function LoginScreen({ navigation }) {
                 {isLoading ? (
                     <ActivityIndicator size="small" color="#fff" style={styles.loading} />
                 ) : (
-                    // 🔑 여기서 handleLogin 함수가 사용됩니다.
+                    // 🔑 async 함수의 반환값을 무시하도록 수정합니다.
                     <Button 
                         title="로그인" 
-                        onPress={handleLogin} 
+                        onPress={() => void handleLogin()} 
                         color="#4A90E2" 
                     />
                 )}
