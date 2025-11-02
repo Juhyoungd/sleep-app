@@ -2,14 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Button, StyleSheet, Alert, TouchableOpacity, ActivityIndicator, ImageBackground, Image } from 'react-native'; 
+import { request } from '../api/client'; // 🔑 API 클라이언트 import
 import { AuthContext } from '../context/AuthContext';
 import { Audio } from 'expo-av'; 
 
 // 🔑 이미지 URI 경로를 require와 resolveAssetSource를 통해 미리 준비합니다.
 const BACKGROUND_IMAGE_URI = Image.resolveAssetSource(require('../../assets/background.png')); 
-
-// 🔑 BASE URL 설정 (실제 IP와 포트로 교체하세요!)
-const BASE_URL = 'http://#YOUR_BASE_URL'; 
 
 
 // 🔑 녹음 설정 (이전과 동일)
@@ -35,21 +33,40 @@ const recordingOptions = {
     },
 };
 
-// 🔑 녹음 파일 전송(업로드) 함수: 네트워크 오류 없이 항상 성공하는 모킹 버전
+// 🔑 실제 녹음 파일 전송(업로드) 함수
 const uploadRecording = async (uri, token, sessionId) => {
-    console.log(`[네트워크 오류 방지 모킹] 파일 URI: ${uri}, 세션 ID: ${sessionId}`);
-    
-    // 🔑 실제 서버 통신 시간을 흉내내기 위해 1초 지연시킵니다.
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
-    
-    // 🔑 항상 성공했다고 가정하고 가짜 분석 결과를 반환합니다.
-    return { success: true, analysisId: 'MOCK_AI_RESULT_789' };
-    
-    // --- 실제 API 호출 로직 ---
-    /*
-    const UPLOAD_URL = `${BASE_URL}/sessions/${sessionId}/clips/upload`; 
-    // ... (fetch 호출 및 FormData 구성 로직)
-    */
+    const formData = new FormData();
+    const filename = uri.split('/').pop();
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `audio/${match[1]}` : `audio`;
+
+    // @ts-ignore
+    formData.append('audio', { uri, name: filename, type });
+
+    // 🔑 중앙 API 클라이언트의 fetch를 직접 사용 (FormData 때문)
+    // client.js의 BASE_URL을 가져오거나 여기에 직접 정의해야 합니다.
+    const BASE_URL = 'http://192.168.0.1:8000/api'; // 👈 예시: client.js와 동일한 주소로 변경
+    const UPLOAD_URL = `${BASE_URL}/sessions/${sessionId}/clips/upload`;
+
+    try {
+        const response = await fetch(UPLOAD_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                // 'Content-Type': 'multipart/form-data' 헤더는 fetch가 자동으로 설정해줍니다.
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || '파일 업로드에 실패했습니다.');
+        }
+        return await response.json(); // 성공 시 응답 데이터 반환
+    } catch (error) {
+        console.error('파일 업로드 실패:', error);
+        throw error;
+    }
 };
 
 
@@ -108,9 +125,11 @@ export default function MainScreen({ navigation }) {
         }
 
         try {
-            // 🔑 1. 세션 생성 요청 (모킹)
-            // 실제 API 호출: POST /sessions
-            const sessionId = 'MOCK_SESSION_' + Date.now(); // 가짜 세션 ID 생성
+            // 🔑 1. 실제 세션 생성 요청
+            const sessionData = await request('/sessions', { method: 'POST' }, userToken);
+            if (!sessionData || !sessionData.id) throw new Error('세션 ID를 받아오지 못했습니다.');
+            
+            const sessionId = sessionData.id;
             setCurrentSessionId(sessionId); // 세션 ID 저장
 
             // 🔑 2. 녹음 시작
@@ -172,39 +191,24 @@ export default function MainScreen({ navigation }) {
             setIsUploading(true); // 업로드 상태 시작
 
             // 2. 녹음 클립 업로드 (모킹)
-            const uploadResult = await uploadRecording(uri, userToken, sessionId);
-            
-            if (!uploadResult.success) throw new Error(uploadResult.message);
+            await uploadRecording(uri, userToken, sessionId);
             
             // 3. 세션 종료 요청 (모킹)
-            // 실제 API 호출: POST /sessions/{id}/finalize
-            await new Promise(resolve => setTimeout(resolve, 500)); // 세션 종료 시간 모킹
+            // 실제 API 호출: POST /sessions/{id}/finalize. 백엔드가 분석 결과를 반환한다고 가정합니다.
+            const analysisResult = await request(`/sessions/${sessionId}/finalize`, { method: 'POST' }, userToken);
 
-            // 🔑 분석 결과 화면으로 전달할 가짜 데이터
-            const mockAnalysisData = {
-                sleepDuration: "7.5 시간",
-                snoreCount: 45,
-                pattern: "깊은 수면 부족",
-                // 🔑 react-native-chart-kit 형식에 맞게 datasets 배열로 데이터를 감싸줍니다.
-                chartData: {
-                    labels: ["월", "화", "수", "목", "금", "토", "일"],
-                    datasets: [
-                        {
-                            data: [6.5, 7.2, 8.0, 7.5, 6.8, 9.0, 7.0] 
-                        }
-                    ]
-                },
-                clips: [
-                    { id: 1, time: "01:30 AM", duration: 3, file_path: 'mock_audio_1.mp3' },
-                    { id: 2, time: "03:45 AM", duration: 5, file_path: 'mock_audio_2.mp3' },
-                    { id: 3, time: "05:10 AM", duration: 2, file_path: 'mock_audio_3.mp3' },
-                ]
+            // 🔑 백엔드에서 받은 실제 분석 결과 데이터 사용
+            // 백엔드 응답 형식이 아래와 다르다면 이 부분을 수정해야 합니다.
+            const resultData = {
+                ...analysisResult, // 백엔드에서 받은 데이터
+                // chartData 형식이 라이브러리에 맞지 않다면 여기서 변환해줍니다.
+                // 예: chartData: { labels: ..., datasets: [{ data: analysisResult.chartData }] }
             };
 
             // 🔑 ResultTab으로 이동하며 데이터 전달
             navigation.navigate('ResultTab', { 
-                analysisId: sessionId, 
-                resultData: mockAnalysisData,
+                analysisId: sessionId,
+                resultData: resultData,
                 transferTime: new Date().toLocaleTimeString(),
             });
             

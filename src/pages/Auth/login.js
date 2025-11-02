@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator, ImageBackground, Alert } from 'react-native';
+import { request } from '../../api/client'; // 🔑 API 클라이언트 import
 import { AuthContext } from '../../context/AuthContext'; 
 
 // 🔑 이미지 경로 수정: 'src/pages/Auth/'에서 '../../assets/background.png'로 경로 수정
@@ -27,20 +28,21 @@ export default function LoginScreen({ navigation }) {
         setIsLoading(true); 
         
         try {
-            // 🔑 모킹(Mocking) 로직: 네트워크 오류 방지
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            const MOCK_SUCCESS_EMAIL = 'test@test.com';
+            // 🔑 실제 백엔드 API 호출로 변경
+            const data = await request('/auth/login', { // 🔑 API 명세에 따라 '/auth/login'으로 수정
+                method: 'POST',
+                body: JSON.stringify({ email, password }),
+            });
 
-            if (email === MOCK_SUCCESS_EMAIL && password === '1234') {
-                const MOCK_TOKEN = 'mock_jwt_token_' + Date.now();
-                await signIn(MOCK_TOKEN); 
+            // 🔑 서버 응답에 토큰이 포함되어 있다고 가정 (예: { token: '...' })
+            if (data && data.token) {
+                await signIn(data.token);
             } else {
-                Alert.alert('로그인 모킹 실패', 'ID/PW를 확인해주세요.');
+                throw new Error('로그인에 실패했습니다. (토큰 없음)');
             }
-            
         } catch (error) {
-            console.error('모킹 중 오류:', error);
-            Alert.alert('테스트 오류', '로그인 처리 중 예외가 발생했습니다.');
+            // request 함수에서 이미 Alert를 호출하므로 여기서는 추가 Alert가 필요 없을 수 있습니다.
+            // 필요하다면 error.message를 사용하여 더 구체적인 오류를 표시할 수 있습니다.
         } finally {
             setIsLoading(false);
         }

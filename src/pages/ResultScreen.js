@@ -15,14 +15,18 @@ import { useRoute } from '@react-navigation/native';
 import { LineChart } from 'react-native-chart-kit';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-
-const MOCK_SOUND_URI = require('../../assets/mock_short_sound.mp3');
+import { request } from '../api/client'; // 🔑 API 클라이언트 import (필요 시)
+import { AuthContext } from '../context/AuthContext'; // 🔑 토큰 사용을 위해 import
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function ResultScreen() {
     const route = useRoute();
     const { analysisId, resultData, transferTime } = route.params || {};
+
+    // 🔑 백엔드 오디오 파일에 접근하기 위한 기본 URL
+    const AUDIO_BASE_URL = 'http://192.168.0.1:8000/storage'; // 👈 예시: 실제 오디오 파일이 저장된 경로로 변경
+    const { userToken } = React.useContext(AuthContext);
 
     // ------------------------------------
     // 1. 오디오 재생 상태 관리
@@ -43,7 +47,7 @@ export default function ResultScreen() {
     // ------------------------------------
     // 2. 오디오 재생/일시정지 로직
     // ------------------------------------
-    const playSound = async (clipId) => {
+    const playSound = async (clipId, filePath) => {
         if (isPlaying && currentClipId === clipId) {
             console.log('재생 일시정지');
             await soundObject.pauseAsync();
@@ -60,7 +64,17 @@ export default function ResultScreen() {
         }
 
         try {
-            const { sound } = await Audio.Sound.createAsync(MOCK_SOUND_URI);
+            // 🔑 실제 파일 경로로 오디오 로드
+            const audioUrl = `${AUDIO_BASE_URL}/${filePath}`;
+            console.log('오디오 로드 시도:', audioUrl);
+
+            const { sound } = await Audio.Sound.createAsync(
+                { uri: audioUrl },
+                {
+                    // 만약 오디오 파일 접근에 인증이 필요하다면 헤더를 추가합니다.
+                    // headers: { 'Authorization': `Bearer ${userToken}` }
+                }
+            );
             setSoundObject(sound);
             setCurrentClipId(clipId);
             setIsPlaying(true);
@@ -144,7 +158,7 @@ export default function ResultScreen() {
                     <Text style={styles.clipTime}>녹음 시간: {item.time}</Text>
                     <Text style={styles.clipDuration}>지속 시간: {item.duration}초</Text>
                 </View>
-                <TouchableOpacity style={styles.playButton} onPress={() => playSound(item.id)}>
+                <TouchableOpacity style={styles.playButton} onPress={() => playSound(item.id, item.file_path)}>
                     <Ionicons
                         name={isThisClipPlaying ? "pause-circle" : "play-circle"}
                         size={32}

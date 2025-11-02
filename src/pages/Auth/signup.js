@@ -2,20 +2,17 @@
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator, ImageBackground, Alert } from 'react-native';
+import { request } from '../../api/client'; // 🔑 API 클라이언트 import
 
 // 🔑 이미지 경로 수정: 'src/pages/Auth/'에서 '../../assets/background.png'로 경로 수정
 // assets 폴더가 프로젝트 루트에 있다고 가정할 때
 const BACKGROUND_IMAGE = require('../../../assets/background.png'); 
-
 
 export default function SignupScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState(''); // 비밀번호 확인 상태
     const [isLoading, setIsLoading] = useState(false); 
-
-    // 🔑 회원가입 API 주소 (실제 백엔드 연동 시 변경 필요)
-    const SIGNUP_URL = 'http://your-backend-ip-or-domain:port/api/register'; 
 
     const handleSignup = async () => {
         // 1. 입력 유효성 검사
@@ -31,28 +28,15 @@ export default function SignupScreen({ navigation }) {
         setIsLoading(true);
         
         try {
-            // ----------------------------------------------------
-            // 🔑 모킹(Mocking) 로직을 사용하거나, 실제 fetch 로직을 사용합니다.
-            // 현재는 로그인과 동일하게 모킹 대신 실제 fetch 구조를 유지합니다.
-            // ----------------------------------------------------
-            
-            const response = await fetch(SIGNUP_URL, {
+            // 🔑 실제 백엔드 API 호출로 변경
+            await request('/auth/register', { // 🔑 API 명세에 따라 '/auth/register'로 수정
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({ email: email, password: password }),
             });
 
-            if (response.ok) {
-                Alert.alert('가입 성공', '회원가입이 완료되었습니다! 이제 로그인해 주세요.');
-                // 가입 성공 후 로그인 화면으로 이동
-                navigation.navigate('Login'); 
-                
-            } else {
-                const errorData = await response.json();
-                Alert.alert('가입 실패', errorData.message || '회원가입에 실패했습니다. 서버 상태를 확인하세요.');
-            }
+            Alert.alert('가입 성공', '회원가입이 완료되었습니다! 이제 로그인해 주세요.');
+            // 가입 성공 후 로그인 화면으로 이동
+            navigation.navigate('Login'); 
 
         } catch (error) {
             console.error('회원가입 네트워크 오류:', error);
