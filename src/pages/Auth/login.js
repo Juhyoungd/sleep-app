@@ -16,7 +16,7 @@ export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false); 
-
+    const LOGIN_URL = 'http://172.30.1.55:8000/auth/login'; // 예: 'http://<YOUR_BASE_URL>/auth/login'
     // 🔑 3. handleLogin 함수는 컴포넌트 함수 내부에 정의되어야 합니다!
     const handleLogin = async () => {
         if (!email || !password) {
@@ -27,7 +27,41 @@ export default function LoginScreen({ navigation }) {
         setIsLoading(true); 
         
         try {
-            // 🔑 모킹(Mocking) 로직: 네트워크 오류 방지
+            const response = await fetch(LOGIN_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email, password: password }),
+            });
+            const responseData = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                // 서버에서 발급한 토큰을 추출합니다. (백엔드 응답 키는 프로젝트에 따라 다를 수 있음)
+                const token = responseData.token || responseData.access_token || responseData.accessToken;
+                if (!token) {
+                    Alert.alert('로그인 실패', '서버에서 토큰을 받지 못했습니다.');
+                } else {
+                    // AuthContext의 signIn은 토큰을 받고 AsyncStorage에 저장합니다.
+                    await signIn(token);
+                    // 인증 상태가 변하면 네비게이션이 변경될 수 있지만 명시적으로 이동해도 됩니다.
+                    navigation.navigate('Main');
+                }
+            } else {
+                Alert.alert('로그인 실패', responseData.message || '이메일 또는 비밀번호를 확인해주세요.');
+            }
+            
+        } catch (error) {
+            console.error('로그인 네트워크 오류:', error);
+            // 🔑 백엔드 연동 전이라면 이 오류가 발생합니다.
+            Alert.alert('오류', '네트워크 연결 상태를 확인해주세요. (서버 미접속)');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+            
+            /*
+                // 🔑 모킹(Mocking) 로직: 네트워크 오류 방지
             await new Promise(resolve => setTimeout(resolve, 1500));
             const MOCK_SUCCESS_EMAIL = 'test@test.com';
 
@@ -45,6 +79,7 @@ export default function LoginScreen({ navigation }) {
             setIsLoading(false);
         }
     };
+    */
     // 🔑 handleLogin 함수 정의 끝
 
     return (

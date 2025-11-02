@@ -15,7 +15,7 @@ export default function SignupScreen({ navigation }) {
     const [isLoading, setIsLoading] = useState(false); 
 
     // 🔑 회원가입 API 주소 (실제 백엔드 연동 시 변경 필요)
-    const SIGNUP_URL = 'http://your-backend-ip-or-domain:port/api/register'; 
+    const SIGNUP_URL = 'http://172.30.1.55:8000/auth/register'; // 예: 'http://<YOUR_BASE_URL>/auth/register'
 
     const handleSignup = async () => {
         // 1. 입력 유효성 검사
