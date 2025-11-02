@@ -9,7 +9,7 @@ import { Audio } from 'expo-av';
 const BACKGROUND_IMAGE_URI = Image.resolveAssetSource(require('../../assets/background.png')); 
 
 // 🔑 BASE URL 설정 (실제 IP와 포트로 교체하세요!)
-const BASE_URL = 'http://#YOUR_BASE_URL'; 
+const BASE_URL = 'http://172.30.1.55:8000'; // 예: 'http://; 
 
 
 // 🔑 녹음 설정 (이전과 동일)
