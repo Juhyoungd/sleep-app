@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator, ImageBackground, Alert } from 'react-native';
-import { request } from '../../api/client'; // 🔑 API 클라이언트 import
+import { request } from './client'; // 🔑 API 클라이언트 import 경로 수정
 
 // 🔑 이미지 경로 수정: 'src/pages/Auth/'에서 '../../assets/background.png'로 경로 수정
 // assets 폴더가 프로젝트 루트에 있다고 가정할 때

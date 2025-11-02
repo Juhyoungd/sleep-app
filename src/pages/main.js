@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Button, StyleSheet, Alert, TouchableOpacity, ActivityIndicator, ImageBackground, Image } from 'react-native'; 
-import { request } from '../api/client'; // 🔑 API 클라이언트 import
+import { request } from './Auth/client'; // 🔑 API 클라이언트 import 경로 수정
 import { AuthContext } from '../context/AuthContext';
 import { Audio } from 'expo-av'; 
 

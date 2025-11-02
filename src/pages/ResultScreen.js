@@ -15,7 +15,7 @@ import { useRoute } from '@react-navigation/native';
 import { LineChart } from 'react-native-chart-kit';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import { request } from '../api/client'; // 🔑 API 클라이언트 import (필요 시)
+import { request } from './Auth/client'; // 🔑 API 클라이언트 import 경로 수정 (필요 시)
 import { AuthContext } from '../context/AuthContext'; // 🔑 토큰 사용을 위해 import
 
 const screenWidth = Dimensions.get('window').width;
